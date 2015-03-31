@@ -77,7 +77,7 @@ Function Compare-IPRange {
 $Boundaries = All-Boundaries
 
 Get-WmiObject -Namespace $Namespace -ComputerName $SiteServer -Query "Select Name, ADSiteName, IPAddresses, IPSubnets from SMS_R_System" | ForEach-Object {
-    $Result = Select-Object -InputObject "" Name, InBoundary, SiteAssignment, Content, IPAddresses, ADSite, IPSubnets
+    $Result = Select-Object -InputObject "" Name, InBoundary, SiteAssignment, Content, IPAddresses, ADSite, IPSubnets, InADSiteBoundary, InIPAddressBoundary, InIPSubnetBoundary
     $Result.Name = $_.Name
     $Result.InBoundary = $false
     $Result.SiteAssignment = $false
@@ -85,12 +85,16 @@ Get-WmiObject -Namespace $Namespace -ComputerName $SiteServer -Query "Select Nam
     $Result.ADSite = $_.ADSiteName
     $Result.IPAddresses = $_.IPAddresses
     $Result.IPSubnets = $_.IPSubnets
+    $result.InIPAddressBoundary = $false
+    $Result.InADSiteBoundary = $false
+    $Result.InIPSubnetBoundary = $false
     Foreach ($Boundary in $Boundaries) {
         If ($Boundary.Type -eq 0) {
             If ($_.IPSubnets -ne $null) {
                 foreach ($IPSubnet in $_.IPSubnets) {
                     if ($IPSubnet -eq $Boundary.Value) {
                         $Result.InBoundary = $true
+                        $result.InIPSubnetBoundary = $true
                         if ($Boundary.DoesContent) { $Result.Content = $true }
                         if ($Boundary.SiteAssignment) { $Result.SiteAssignment = $true }
                     }
@@ -103,6 +107,7 @@ Get-WmiObject -Namespace $Namespace -ComputerName $SiteServer -Query "Select Nam
             If ($CompADSite -ne $null) {
                 If ($CompADSite.ToLower() -eq $BoundaryADSite.ToLower()) {
                     $Result.InBoundary = $true
+                    $result.InADSiteBoundary = $true
                     If ($Boundary.DoesContent) { $Result.Content = $true }
                     If ($Boundary.SiteAssignment) { $Result.SiteAssignment = $true }
                 }
@@ -117,6 +122,7 @@ Get-WmiObject -Namespace $Namespace -ComputerName $SiteServer -Query "Select Nam
                 if ($IP.Contains(".")) {
                     If (Compare-IPRange -IPAddress $IP -IPRange $Boundary.Value) { 
                         $Result.InBoundary = $true
+                        $result.InIPAddressBoundary = $true
                         If ($Boundary.DoesContent) { $Result.Content = $true }
                         If ($Boundary.SiteAssignment) { $Result.SiteAssignment = $true }
                     }
