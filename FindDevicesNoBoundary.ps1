@@ -7,14 +7,16 @@
 .PARAMETER SiteCode
     Site code
 .EXAMPLE
-	PS C:\PSScript > .\FindDevicesNoBoundary.ps1 -SiteServer CM.Home.Local -SiteCode PS1
+	.\FindDevicesNoBoundary.ps1 -SiteServer CM.Home.Local -SiteCode PS1
     Will check the IP address of all devices in the site and match them up to boundaries / boundary groups
+.Example
+    .\FindDevicesNoBoundary.ps1 -SiteServer CM.Home.Local -SiteCode PS1 | Out-GridView
+    Will do same as above but disply the results in a nice gridview
 .INPUTS
 .OUTPUTS
 .LINK
 .NOTES
 	NAME: FindDevicesNoBoundary.ps1
-	VERSION: 1.0
 	AUTHOR: Ryan Ephgrave
 	LASTEDIT: 03/31/2015
 #>
