@@ -256,4 +256,63 @@ Function DistributionPointInformation {
     $output
 }
 
-DistributionPointInformation -CopyToClipBoard $true -SiteCode "ps1" -SiteServer "mn04sccm01"
+Function Find-TSChildNodes {
+    Param ($nodes)
+    foreach ($ChildNode in $Nodes) {
+        $NodeName = $ChildNode.LocalName
+        $NodeDescription = ""
+        $strDescription = ""
+        $NodeDescription = $ChildNode.Description
+        If ($NodeDescription.Length -gt 0) { $strDescription = " - $NodeDescription" }
+        If ($NodeName.ToLower() -eq "sequence") {
+            Find-TSChildNodes $ChildNode.ChildNodes
+        }
+        elseif ($NodeName -ieq "step") {
+            $count = 0
+            $tempOutput = ""
+            while ($TabCount -gt $count) {
+                $tempOutput = $tempOutput + "`t"
+                $count++
+            }
+            $tempOutput = $tempOutput + $ChildNode.Name + $strDescription
+            $tempOutput
+        }
+        elseif ($NodeName -ieq "group") {
+            $count = 0
+            $tempOutput = ""
+            while ($TabCount -gt $count) {
+                $tempOutput = $tempOutput + "`t"
+                $count++
+            }
+            $tempOutput = $tempOutput + $ChildNode.Name + $strDescription
+            $tempOutput
+            $TabCount = $TabCount + 1
+            Find-TSChildNodes $ChildNode.ChildNodes
+            $TabCount = $TabCount - 1
+        }
+    }
+}
+
+Function TaskSequenceInformation {
+    Param (
+    $CopyToClipBoard = $false, 
+    [Parameter(Mandatory=$true)]
+    $SiteCode,
+    [Parameter(Mandatory=$true)]
+    $SiteServer
+    )
+    $FinalOutput = New-Object System.Collections.ArrayList
+    Get-WMIObject -Namespace "root\sms\site_$SiteCode" -ComputerName $SiteServer -Query "Select * From SMS_TaskSequencePackage" | ForEach-Object {
+        $_.Get()
+        $FunctionOutput = ""
+        $FinalOutput.Add($_.Name)
+        $TabCount = 1
+        [xml]$TSXml = $_.Sequence
+        $FunctionOutput = Find-TSChildNodes -nodes $TSXml.ChildNodes
+        $FinalOutput.Add($FunctionOutput)
+    }
+    if ($CopyToClipBoard) { $FinalOutput | clip.exe }
+    $FinalOutput
+}
+
+TaskSequenceInformation -CopyToClipBoard $true -SiteCode "ps1" -SiteServer "mn04sccm01"
